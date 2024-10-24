@@ -82,14 +82,24 @@ exports.deleteBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
 
-    const booking = await Booking.findByIdAndDelete(bookingId);
+    // Find the booking to be deleted
+    const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
 
     // Update the seat status on the bus
-    await Bus.findOneAndUpdate(
-      { _id: booking.busId, 'seats.seatNumber': booking.seatNumber },
-      { $set: { 'seats.$.isBooked': false }, $inc: { currentOccupancy: -1 } }
-    );
+    const bus = await Bus.findOne({ _id: booking.busId, 'seats.seatNumber': booking.seatNumber });
+    if (!bus) return res.status(404).json({ error: 'Bus not found.' });
+
+    const seat = bus.seats.find(seat => seat.seatNumber === booking.seatNumber);
+    if (seat) {
+      seat.isBooked = false; // Cancel the seat booking
+      seat.bookedBy = null; // Clear the bookedBy field
+      bus.currentOccupancy -= 1; // Decrease current occupancy
+      await bus.save(); // Save the updated bus
+    }
+
+    // Delete the booking record
+    await Booking.findByIdAndDelete(bookingId);
 
     res.status(200).json({ message: 'Booking deleted successfully!' });
   } catch (error) {
@@ -118,7 +128,15 @@ exports.getBookingsForDate = async (req, res) => {
   try {
     const { date } = req.query;
 
-    const bookings = await Booking.find({ date }).populate('busId', 'busName route');
+    // Convert the date from the query to a start and end range
+    const startDate = new Date(date);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1); // Set to the next day
+
+    const bookings = await Booking.find({
+      bookedAt: { $gte: startDate, $lt: endDate } // Filter for bookings within the date range
+    }).populate('busId', 'busName route');
+
     if (!bookings.length) {
       return res.status(404).json({ message: 'No bookings found for this date.' });
     }
@@ -128,6 +146,7 @@ exports.getBookingsForDate = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch bookings.', details: error.message });
   }
 };
+
 
 // Get booked courts with time slots (useful for admin views)
 exports.getBookedCourtsWithTimeSlots = async (req, res) => {

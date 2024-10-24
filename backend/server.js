@@ -21,10 +21,10 @@ const userRoutes = require("./routes/user"); // User routes
 const bookingRoutes = require("./routes/booking"); // Booking routes
 
 // Use Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/buses", busRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/bookings", bookingRoutes); 
+app.use("/api", authRoutes);
+app.use("/api", busRoutes);
+app.use("/api", userRoutes);
+app.use("/api", bookingRoutes); 
  
 // MongoDB Connection
 mongoose.connect(process.env.DATABASE)

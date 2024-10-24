@@ -22,6 +22,6 @@ router.get('/booking/getAll/:userId', isSignedIn, isAuthenticated, getAllBooking
 router.put('/booking/edit/:bookingId/:userId', isSignedIn, isAuthenticated, updateBooking);
 router.delete('/booking/remove/:bookingId/:userId', isSignedIn, isAuthenticated, deleteBooking);
 router.get('/booking/get/:userId', isSignedIn, isAuthenticated, getBookingsByCentreSportAndDate);
-router.get('/booking/getBydate', getBookingsForDate);
+router.get('/admin/:userId/booking/getBydate', isSignedIn, isAuthenticated, getBookingsForDate);
 
 module.exports = router;
